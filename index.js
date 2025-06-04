@@ -3,8 +3,8 @@ const axios = require("axios");
 const TelegramBot = require("node-telegram-bot-api");
 const fetch = require("node-fetch");
 
-const token = "BOT_TOKEN";
-const admin = "USERID";
+const token = "7814685492:AAF11TRh3nlYd_T4Jhu6j1WG-3rvQbc3LTI";
+const admin = "7782401729";
 const DATABASE_URL = "https://test-e5e2d-default-rtdb.firebaseio.com"; 
 const WEBHOOK_URL = "VERCEL_URL";
 
