@@ -1,7 +1,7 @@
 import { Telegraf } from 'telegraf';
 
-const BOT_TOKEN = process.env.BOT_TOKEN || '8109149621:AAEW0yb4Mi99uoJvpQDOpTHW6OO5EQnq4-0';
-const CHANNEL_ID = process.env.CHANNEL_ID || '-1002732217390'; // or -100XXXXXXXXXX
+const BOT_TOKEN = process.env.BOT_TOKEN || '123456789:ABCDEFghIjkLMNOP';
+const CHANNEL_ID = process.env.CHANNEL_ID || '-100xxxxxxxxxx'; // or -100XXXXXXXXXX
 
 const bot = new Telegraf(BOT_TOKEN);
 
