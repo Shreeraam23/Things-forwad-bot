@@ -1,144 +1,66 @@
-const express = require("express");
-const axios = require("axios");
-const TelegramBot = require("node-telegram-bot-api");
-const fetch = require("node-fetch");
+import { Telegraf } from 'telegraf';
 
-const token = "7814685492:AAF11TRh3nlYd_T4Jhu6j1WG-3rvQbc3LTI";
-const admin = "7782401729";
-const DATABASE_URL = "https://test-e5e2d-default-rtdb.firebaseio.com"; 
-const WEBHOOK_URL = "https://image-generator-bot-pi.vercel.app/";
+const BOT_TOKEN = process.env.BOT_TOKEN || '8109149621:AAEW0yb4Mi99uoJvpQDOpTHW6OO5EQnq4-0';
+const CHANNEL_ID = process.env.CHANNEL_ID || '-1002732217390'; // or -100XXXXXXXXXX
 
-const bot = new TelegramBot(token, { webHook: { port: false } });
-const app = express();
-app.use(express.json());
-bot.setWebHook(WEBHOOK_URL);
+const bot = new Telegraf(BOT_TOKEN);
 
-const broadcastSessions = {};
-
-async function saveUserToFirebase(user) {
-  const url = `${DATABASE_URL}/users/${user.id}.json`;
-  const payload = {
-    id: user.id,
-    first_name: user.first_name || "",
-    username: user.username || "",
-    timestamp: Date.now()
-  };
-  await fetch(url, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-    headers: { "Content-Type": "application/json" }
-  });
-}
-
-async function getTotalUsers() {
-  const url = `${DATABASE_URL}/users.json`;
-  const res = await fetch(url);
-  const data = await res.json();
-  return data ? Object.keys(data).length : 0;
-}
-
-app.post("/", async (req, res) => {
-  const update = req.body;
-  bot.processUpdate(update);
-  const msg = update.message;
-  if (!msg) return res.end("OK");
-
-  const chatId = msg.chat.id;
-  const user = msg.from;
-
-  if (msg.text === "/start") {
-  const userUrl = `${DATABASE_URL}/users/${user.id}.json`;
-  const response = await fetch(userUrl);
-  const exists = await response.json();
-
-  const text = `*👋 Welcome* [${user.first_name}](tg://user?id=${user.id})\n\n*🤗 Using Me You Can Create Image, So Share Me Your Thoughts*`;
-
-  await bot.sendMessage(chatId, text, {
-    parse_mode: "Markdown",
-    disable_web_page_preview: true,
-    reply_to_message_id: msg.message_id
-  });
-
-  if (!exists) {
-    await saveUserToFirebase(user);
-    const totalUsers = await getTotalUsers();
-    const newUserMsg =
-      "➕ <b>New User Notification</b> ➕\n\n" +
-      "👤<b>User:</b> <a href='tg://user?id=" +
-      user.id +
-      "'>" +
-      user.first_name +
-      "</a>\n\n" +
-      "🆔<b>User ID:</b> <code>" +
-      user.id +
-      "</code>\n\n" +
-      "🌝 <b>Total Users Count: " +
-      totalUsers +
-      "</b>";
-    await bot.sendMessage(admin, newUserMsg, { parse_mode: "HTML" });
-  }
-}
-   else if (msg.text === "/broadcast" && user.id.toString() === admin) {
-    await bot.sendMessage(chatId, "<b>Enter Broadcast Message Here 👇</b>", {
-      parse_mode: "HTML"
-    });
-    broadcastSessions[chatId] = true;
-  } else if (broadcastSessions[chatId] && user.id.toString() === admin) {
-    delete broadcastSessions[chatId];
-    const usersUrl = `${DATABASE_URL}/users.json`;
-    const resUsers = await fetch(usersUrl);
-    const data = await resUsers.json();
-    if (data) {
-      const userIds = Object.keys(data);
-      let successCount = 0;
-      let failCount = 0;
-
-      for (const id of userIds) {
-        try {
-          await bot.copyMessage(id, chatId, msg.message_id);
-          successCount++;
-        } catch (e) {
-          failCount++;
-        }
-      }
-      await bot.sendMessage(chatId, `✅ Broadcast completed.\n\n📤 Sent to: ${successCount} users\n❌ Failed to send: ${failCount} users`);
-    } else {
-      await bot.sendMessage(chatId, "❌ No users found to broadcast.");
-    }
-  } else if (msg.text) {
-    await bot.sendChatAction(chatId, "upload_photo");
-    const apiUrl =
-      "https://flex-image-generator.vercel.app?prompt=" +
-      encodeURIComponent(msg.text) +
-      "&token=bf518688ee04d17&id=8061974905";
-
-    try {
-      const { data } = await axios.get(apiUrl);
-      const photoUrl = data.download_url;
-      const caption =
-        "*👆 Here Is Your Generated Image\n\n💭 Your Prompt:*\n`" +
-        msg.text +
-        "`\n\n*🧑‍💻 Created By:* [BOTNAME](https://telegram.dog/Whensong)";
-      const keyboard = {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "🧑‍💻 Developer", url: "https://telegram.dog/you" }]
-          ]
-        },
-        parse_mode: "Markdown",
-        reply_to_message_id: msg.message_id
-      };
-      await bot.sendPhoto(chatId, photoUrl, { ...keyboard, caption });
-    } catch {
-      await bot.sendMessage(chatId, "❌ Failed to generate image. Try again later.");
-    }
-  }
-
-  res.end("OK");
+// Handle text messages
+bot.on('text', async (ctx) => {
+  const user = ctx.from.username || 'Unknown';
+  const text = ctx.message.text;
+  const message = `From @${user}:\n${text}`;
+  await ctx.telegram.sendMessage(CHANNEL_ID, message);
 });
 
-app.get("/", (req, res) => {
-  res.send("OK");
+// Handle photos
+bot.on('photo', async (ctx) => {
+  const user = ctx.from.username || 'Unknown';
+  const caption = ctx.message.caption || '';
+  const message = `📸 Photo from @${user}\n${caption}`;
+  const photo = ctx.message.photo.at(-1).file_id; // highest resolution
+  await ctx.telegram.sendPhoto(CHANNEL_ID, photo, { caption: message });
 });
 
-module.exports = app;
+// Handle videos
+bot.on('video', async (ctx) => {
+  const user = ctx.from.username || 'Unknown';
+  const caption = ctx.message.caption || '';
+  const message = `🎥 Video from @${user}\n${caption}`;
+  const video = ctx.message.video.file_id;
+  await ctx.telegram.sendVideo(CHANNEL_ID, video, { caption: message });
+});
+
+// Handle documents
+bot.on('document', async (ctx) => {
+  const user = ctx.from.username || 'Unknown';
+  const caption = ctx.message.caption || '';
+  const message = `📎 Document from @${user}\n${caption}`;
+  const document = ctx.message.document.file_id;
+  await ctx.telegram.sendDocument(CHANNEL_ID, document, { caption: message });
+});
+
+// Handle voice messages
+bot.on('voice', async (ctx) => {
+  const user = ctx.from.username || 'Unknown';
+  const message = `🎙️ Voice message from @${user}`;
+  const voice = ctx.message.voice.file_id;
+  await ctx.telegram.sendVoice(CHANNEL_ID, voice, { caption: message });
+});
+
+// Handle stickers
+bot.on('sticker', async (ctx) => {
+  const user = ctx.from.username || 'Unknown';
+  const message = `🔖 Sticker from @${user}`;
+  const sticker = ctx.message.sticker.file_id;
+  await ctx.telegram.sendSticker(CHANNEL_ID, sticker);
+});
+
+bot.launch();
+
+export default function handler(req, res) {
+  res.status(200).send('✅ Telegram bot is running.');
+}
+
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
