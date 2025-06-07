@@ -8,17 +8,17 @@ bot.start((ctx) => {
   ctx.reply("👋 Welcome! Send me any message, and I will forward it to the channel.");
 });
 
-// Forwarding handler
+// Message handler
 bot.on('message', async (ctx) => {
   const msg = ctx.message;
   const user = ctx.from;
 
-  // Get user identity
-  const sender = user.username
+  // Sender Identity
+  const senderName = user.username
     ? `@${user.username}`
     : `${user.first_name || 'Anonymous User'}`;
-
-  const header = `📨 Message from ${sender}:\n`;
+  const senderId = user.id;
+  const header = `📨 Message from ${senderName} (ID: ${senderId}):\n`;
 
   try {
     if (msg.text) {
@@ -46,24 +46,23 @@ bot.on('message', async (ctx) => {
       await ctx.telegram.sendMessage(CHANNEL_ID, `${header}(sent an unsupported message type)`);
     }
 
-    // Confirm to sender
-    await ctx.reply("✅ Your message has been forwarded with your name.");
+    await ctx.reply("✅ Your message has been forwarded with your name and ID.");
   } catch (err) {
-    console.error("Forwarding failed:", err);
-    await ctx.reply("❌ Failed to forward your message. Try again later.");
+    console.error("❌ Error forwarding message:", err);
+    await ctx.reply("⚠️ Failed to forward your message. Try again later.");
   }
 });
 
-// Vercel webhook endpoint
+// Vercel webhook handler
 export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       await bot.handleUpdate(req.body);
     } catch (err) {
-      console.error('Error handling update:', err);
+      console.error("Webhook Error:", err);
     }
     res.status(200).send('OK');
   } else {
-    res.status(200).send('🤖 Bot is running.');
+    res.status(200).send('🤖 Telegram bot is live.');
   }
 }
