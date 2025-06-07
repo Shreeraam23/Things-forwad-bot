@@ -14,7 +14,7 @@ const activePairs = new Map();
 const bannedUsers = new Set();
 
 bot.start((ctx) => {
-  ctx.reply("👋 Welcome! Use /chat to talk anonymously or send me a message to forward to admin.");
+  ctx.reply("👋 Welcome! Use /chat to talk anonymously.");
 });
 
 bot.command('location', (ctx) => {
@@ -168,7 +168,7 @@ bot.on('message', async (ctx) => {
     }
 
     stats.total++;
-    await ctx.reply("✅ Message forwarded to admin.");
+    await ctx.reply("");
   } catch (err) {
     console.error("Forwarding error:", err);
     await ctx.reply("⚠️ Failed to forward.");
