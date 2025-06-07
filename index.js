@@ -171,7 +171,7 @@ bot.on('message', async (ctx) => {
     await ctx.reply("");
   } catch (err) {
     console.error("Forwarding error:", err);
-    await ctx.reply("⚠️ Failed to forward.");
+    await ctx.reply("");
   }
 });
 
