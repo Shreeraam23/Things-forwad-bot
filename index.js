@@ -14,7 +14,7 @@ const activePairs = new Map();
 const bannedUsers = new Set();
 
 bot.start((ctx) => {
-  ctx.reply("👋 Welcome! Use /chat to talk anonymously.");
+  ctx.reply("");
 });
 
 bot.command('location', (ctx) => {
